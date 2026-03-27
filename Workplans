@@ -1,0 +1,67 @@
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+
+# 1. Setup Page Configuration
+st.set_page_config(page_title="Dairy Partner Workplan Tracker", layout="wide")
+
+# 2. Mock Data Creation (Replace this with pd.read_csv('your_file.csv'))
+def load_data():
+    data = {
+        'Partner': ['Paras', 'Lactalis', 'Schreiber', 'Govind', 'Parag'] * 3,
+        'Activity': ['Milk Collection', 'Quality Check', 'Cold Chain'] * 5,
+        'Sub-Activity': ['Route Optimization', 'Fat Testing', 'Chiller Maintenance'] * 5,
+        'Planned': [100, 80, 50, 120, 90] * 3,
+        'Achieved': [85, 80, 40, 110, 95] * 3
+    }
+    return pd.DataFrame(data)
+
+df = load_data()
+
+# 3. Sidebar Navigation
+st.sidebar.header("Filters")
+partner_filter = st.sidebar.multiselect(
+    "Select Dairy Partner:",
+    options=df["Partner"].unique(),
+    default=df["Partner"].unique()
+)
+
+# Filter the dataframe
+filtered_df = df[df["Partner"].isin(partner_filter)]
+
+# 4. Main Dashboard UI
+st.title("🥛 Dairy Partner Workplan Tracker")
+st.markdown("Monitor monthly activities and sub-activity targets.")
+
+# Metrics Row
+total_planned = filtered_df['Planned'].sum()
+total_achieved = filtered_df['Achieved'].sum()
+progress = (total_achieved / total_planned) * 100 if total_planned > 0 else 0
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Planned", total_planned)
+col2.metric("Total Achieved", total_achieved)
+col3.metric("Overall Progress", f"{progress:.1f}%")
+
+st.divider()
+
+# 5. Visualizations
+st.subheader("Performance by Partner")
+fig = px.bar(
+    filtered_df, 
+    x="Partner", 
+    y=["Planned", "Achieved"], 
+    barmode="group",
+    title="Planned vs Achieved Targets",
+    color_discrete_map={"Planned": "#1f77b4", "Achieved": "#2ca02c"}
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# 6. Detailed Data Table
+st.subheader("Workplan Details")
+# Calculate percentage for the table
+filtered_df['% Completion'] = (filtered_df['Achieved'] / filtered_df['Planned'] * 100).round(1)
+st.dataframe(filtered_df, use_container_width=True)
+
+# 7. AppSheet Integration Note
+st.info("💡 **Integration Tip:** To connect this to AppSheet, save your source data in a Google Sheet. AppSheet will act as your mobile entry tool, and this Streamlit app will act as your advanced analytics dashboard.")
